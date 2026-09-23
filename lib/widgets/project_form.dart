@@ -4,6 +4,7 @@ import '../calculators/input_validator.dart';
 import '../models/project_input.dart';
 import '../models/risk_level.dart';
 import '../models/scenario_type.dart';
+import '../services/app_feedback.dart';
 import '../services/formatters.dart';
 import '../services/project_controller.dart';
 
@@ -75,6 +76,7 @@ class _ProjectFormState extends State<ProjectForm> {
       errors.add('La vida del proyecto debe ser un número entero de años.');
     }
     if (errors.isNotEmpty) {
+      AppFeedback.instance.error();
       setState(() => _errors = errors);
       return;
     }
@@ -93,11 +95,24 @@ class _ProjectFormState extends State<ProjectForm> {
       sourceLabel: 'Proyecto personalizado',
     );
     setState(() => _errors = validation);
-    if (validation.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Proyecto recalculado.')),
-      );
+    if (validation.isNotEmpty) {
+      AppFeedback.instance.error();
+      return;
     }
+    AppFeedback.instance.simulate();
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Proyecto recalculado.'),
+            ],
+          ),
+        ),
+      );
   }
 
   double? _read(
@@ -113,6 +128,7 @@ class _ProjectFormState extends State<ProjectForm> {
   }
 
   void _reset() {
+    AppFeedback.instance.confirm();
     setState(() => _errors = const []);
     widget.controller.reset();
   }
@@ -176,7 +192,7 @@ class _ProjectFormState extends State<ProjectForm> {
           signed: true,
         ),
         const SizedBox(height: 4),
-        const Text('Escenario económico'),
+        _label(Icons.public_rounded, 'Escenario económico'),
         const SizedBox(height: 6),
         SegmentedButton<ScenarioType>(
           showSelectedIcon: false,
@@ -186,11 +202,12 @@ class _ProjectFormState extends State<ProjectForm> {
           ],
           selected: {_scenario},
           onSelectionChanged: (selection) {
+            AppFeedback.instance.select();
             setState(() => _scenario = selection.first);
           },
         ),
         const SizedBox(height: 12),
-        const Text('Nivel de riesgo'),
+        _label(Icons.shield_outlined, 'Nivel de riesgo'),
         const SizedBox(height: 6),
         SegmentedButton<RiskLevel>(
           showSelectedIcon: false,
@@ -200,6 +217,7 @@ class _ProjectFormState extends State<ProjectForm> {
           ],
           selected: {_risk},
           onSelectionChanged: (selection) {
+            AppFeedback.instance.select();
             setState(() => _risk = selection.first);
           },
         ),
@@ -229,6 +247,7 @@ class _ProjectFormState extends State<ProjectForm> {
         Row(
           children: [
             Expanded(
+              flex: 3,
               child: FilledButton.icon(
                 key: const ValueKey('button_calculate'),
                 onPressed: _submit,
@@ -237,12 +256,30 @@ class _ProjectFormState extends State<ProjectForm> {
               ),
             ),
             const SizedBox(width: 12),
-            OutlinedButton(
-              onPressed: _reset,
-              child: const Text('Ejemplo'),
+            Expanded(
+              flex: 2,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                onPressed: _reset,
+                icon: const Icon(Icons.restart_alt_rounded),
+                label: const Text('Ejemplo'),
+              ),
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _label(IconData icon, String text) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: scheme.primary),
+        const SizedBox(width: 6),
+        Text(text, style: Theme.of(context).textTheme.labelLarge),
       ],
     );
   }
@@ -265,7 +302,6 @@ class _ProjectFormState extends State<ProjectForm> {
           signed: signed,
         ),
         decoration: InputDecoration(
-          border: const OutlineInputBorder(),
           isDense: true,
           labelText: label,
           prefixText: prefix,

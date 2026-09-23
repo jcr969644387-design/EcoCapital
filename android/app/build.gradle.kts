@@ -27,6 +27,11 @@ android {
         versionName = flutter.versionName
     }
 
+    androidResources {
+        // Sonidos sin comprimir para cargarlos directamente con SoundPool.
+        noCompress += "wav"
+    }
+
     buildTypes {
         release {
             // APK educativo: se firma con la clave de depuración para que

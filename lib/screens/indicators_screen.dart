@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../calculators/irr_calculator.dart';
+import '../services/app_feedback.dart';
 import '../services/formatters.dart';
 import '../services/indicator_glossary.dart';
 import '../services/project_controller.dart';
+import '../theme/app_theme.dart';
 import '../widgets/indicator_tile.dart';
+import '../widgets/metric_card.dart';
 import '../widgets/project_summary_card.dart';
 import '../widgets/section_title.dart';
 
@@ -39,6 +42,9 @@ class IndicatorsScreen extends StatelessWidget {
     final ratePercent = input.discountRate * 100;
     final sliderValue = ratePercent.clamp(0, maxSliderRate).toDouble();
     final signChanges = IrrCalculator.signChanges(controller.cashFlow.netFlows);
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final finance = FinanceColors.of(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -49,11 +55,22 @@ class IndicatorsScreen extends StatelessWidget {
         ),
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Tasa base: ${Formatters.percent(input.discountRate)}'),
+                Row(
+                  children: [
+                    Icon(Icons.percent_rounded, color: scheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Tasa base: ${Formatters.percent(input.discountRate)}',
+                        style: textTheme.titleSmall,
+                      ),
+                    ),
+                  ],
+                ),
                 Slider(
                   key: const ValueKey('rate_slider'),
                   value: sliderValue,
@@ -61,12 +78,35 @@ class IndicatorsScreen extends StatelessWidget {
                   divisions: 40,
                   label: '${sliderValue.round()} %',
                   onChanged: (value) {
+                    if (value.round() != sliderValue.round()) {
+                      AppFeedback.instance.select();
+                    }
                     controller.update(
                       input.copyWith(discountRate: value / 100),
                     );
                   },
+                  onChangeEnd: (_) => AppFeedback.instance.simulate(),
                 ),
-                Text('VAN actual: ${Formatters.money(ind.npv)}'),
+                MetricGrid(
+                  children: [
+                    MetricCard(
+                      label: 'VAN actual',
+                      value: Formatters.money(ind.npv),
+                      icon: Icons.account_balance_outlined,
+                      color: ind.isNpvPositive
+                          ? finance.positive
+                          : finance.negative,
+                    ),
+                    MetricCard(
+                      label: 'TIR',
+                      value: Formatters.optionalPercent(irr),
+                      icon: Icons.speed_rounded,
+                      color: irr != null && irr > ind.discountRate
+                          ? finance.positive
+                          : finance.negative,
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -117,12 +157,23 @@ class IndicatorsScreen extends StatelessWidget {
           isGood: ind.profitMargin > 0,
         ),
         if (signChanges > 1)
-          const Card(
+          Card(
+            color: finance.warningContainer,
             child: Padding(
-              padding: EdgeInsets.all(12),
-              child: Text(
-                'Atención: los flujos cambian de signo más de una vez. En '
-                'ese caso la TIR puede no ser única; decide con el VAN.',
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline_rounded, color: finance.warning),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Atención: los flujos cambian de signo más de una vez. '
+                      'En ese caso la TIR puede no ser única; decide con el '
+                      'VAN.',
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

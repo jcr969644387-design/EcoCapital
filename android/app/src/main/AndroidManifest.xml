@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Vibración breve en las interacciones principales. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
     <application
         android:label="EcoCapital"
         android:name="${applicationName}"

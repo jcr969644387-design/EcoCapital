@@ -2,10 +2,10 @@ name: ecocapital
 description: "EcoCapital: aplicación educativa para aprender evaluación de inversiones con escenarios financieros ficticios."
 publish_to: "none"
 
-version: 1.0.0+1
+version: 1.0.3+3
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.6.0
 
 dependencies:
   flutter:
@@ -20,3 +20,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/sounds/

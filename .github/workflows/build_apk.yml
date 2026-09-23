@@ -40,7 +40,16 @@ jobs:
         run: flutter test
 
       - name: Build APK
-        run: flutter build apk --release
+        run: |
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee build.log
+
+      - name: Show build error
+        if: failure()
+        run: |
+          grep -iE "error|what went wrong|exception|failed|requires|incompatible" build.log | tail -n 40 | while IFS= read -r line; do
+            echo "::error::$line"
+          done
 
       - name: Read version
         id: version

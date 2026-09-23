@@ -1,0 +1,7 @@
+# Reglas de análisis estático de EcoCapital.
+# Se usa el conjunto recomendado oficial de Flutter.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**

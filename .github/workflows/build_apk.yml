@@ -3,8 +3,13 @@ name: Build APK
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - "v*"
+
+permissions:
+  contents: write
 
 jobs:
   build-apk:
@@ -37,14 +42,29 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Verify APK
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d+ -f1)
+          echo "name=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Rename APK
         run: |
           test -f build/app/outputs/flutter-apk/app-release.apk
-          ls -lh build/app/outputs/flutter-apk/app-release.apk
+          cp build/app/outputs/flutter-apk/app-release.apk "EcoCapital-v${{ steps.version.outputs.name }}.apk"
+          ls -lh "EcoCapital-v${{ steps.version.outputs.name }}.apk"
 
-      - name: Upload APK
+      - name: Upload APK (artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: ecocapital-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: EcoCapital-v${{ steps.version.outputs.name }}-apk
+          path: EcoCapital-v${{ steps.version.outputs.name }}.apk
           if-no-files-found: error
+
+      - name: Publish APK (GitHub Release)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.name }}
+          name: EcoCapital v${{ steps.version.outputs.name }}
+          files: EcoCapital-v${{ steps.version.outputs.name }}.apk
+          make_latest: true
